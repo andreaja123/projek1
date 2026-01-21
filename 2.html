@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quality Command Center - SPK Defect Analysis</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- FontAwesome & Google Fonts -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        dark: {
+                            900: '#0f172a',
+                            800: '#1e293b',
+                            700: '#334155',
+                        },
+                        accent: {
+                            blue: '#3b82f6',
+                            purple: '#8b5cf6',
+                            rose: '#f43f5e',
+                            amber: '#f59e0b',
+                            teal: '#14b8a6'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Modern Glass Effect & Utilities */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+        
+        .metric-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Chart Container adjustments */
+        canvas {
+            -moz-user-select: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
+        
+        /* Heatmap Grid Animation */
+        .heatmap-cell {
+            transition: all 0.5s ease;
+        }
+        .heatmap-cell:hover {
+            transform: scale(1.05);
+            z-index: 10;
+            border-color: #fff;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .pulse-red {
+            box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.7);
+            animation: pulse-red 2s infinite;
+        }
+        @keyframes pulse-red {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(244, 63, 94, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased selection:bg-accent-blue selection:text-white">
+
+    <!-- SIDEBAR / NAV (Compact) -->
+    <nav class="fixed top-0 left-0 h-full w-16 bg-dark-900 flex flex-col items-center py-6 z-50 shadow-xl hidden md:flex">
+        <div class="mb-8 text-accent-blue text-2xl"><i class="fa-solid fa-cube"></i></div>
+        
+        <div class="space-y-6 flex-1 w-full flex flex-col items-center">
+            <button class="w-10 h-10 rounded-xl bg-accent-blue text-white shadow-lg shadow-blue-500/30 flex items-center justify-center transition hover:scale-110" title="Dashboard">
+                <i class="fa-solid fa-chart-pie"></i>
+            </button>
+            <button class="w-10 h-10 rounded-xl text-slate-400 hover:bg-dark-800 hover:text-white flex items-center justify-center transition" title="Analysis">
+                <i class="fa-solid fa-magnifying-glass-chart"></i>
+            </button>
+            <button class="w-10 h-10 rounded-xl text-slate-400 hover:bg-dark-800 hover:text-white flex items-center justify-center transition" title="Reports">
+                <i class="fa-solid fa-file-contract"></i>
+            </button>
+        </div>
+
+        <div class="mt-auto text-slate-500 text-xs text-center font-mono">
+            V3.0
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main class="md:ml-16 min-h-screen p-4 md:p-8 space-y-6">
+        
+        <!-- HEADER & FILTERS -->
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <h1 class="text-2xl font-bold text-dark-900 tracking-tight">Quality Command Center</h1>
+                <p class="text-slate-500 text-sm mt-1">Sistem Pendukung Keputusan QC & Produksi</p>
+            </div>
+            
+            <div class="flex items-center gap-3 bg-white p-2 rounded-xl shadow-sm border border-slate-200">
+                <div class="flex items-center gap-2 px-3 border-r border-slate-200">
+                    <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                    <span class="text-xs font-bold text-slate-600 uppercase tracking-wider">Live IoT</span>
+                </div>
+                <select id="timeRange" class="bg-slate-50 border-none text-sm font-medium focus:ring-0 text-slate-600 rounded-lg cursor-pointer hover:bg-slate-100 px-2 py-1">
+                    <option value="today">Hari Ini (Real-time)</option>
+                    <option value="week">7 Hari Terakhir</option>
+                    <option value="month">Bulan Ini</option>
+                </select>
+                <button onclick="refreshData()" class="p-2 text-slate-400 hover:text-accent-blue transition">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- KPI & IMPACT SECTION -->
+        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- 1. Quality Score -->
+            <div class="glass-panel p-5 rounded-2xl metric-card border-l-4 border-accent-teal">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Quality Score</p>
+                        <h3 class="text-3xl font-bold text-dark-900 mt-2">94.2<span class="text-lg text-slate-400 font-normal">/100</span></h3>
+                    </div>
+                    <div class="p-2 bg-teal-50 text-accent-teal rounded-lg">
+                        <i class="fa-solid fa-award text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center gap-2">
+                    <span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded">GRADE A</span>
+                    <span class="text-xs text-slate-500">Target: 92.0</span>
+                </div>
+            </div>
+
+            <!-- 2. Defect Rate -->
+            <div class="glass-panel p-5 rounded-2xl metric-card border-l-4 border-accent-rose">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Defect Rate (NG)</p>
+                        <h3 class="text-3xl font-bold text-accent-rose mt-2" id="kpi-defect-rate">0%</h3>
+                    </div>
+                    <div class="p-2 bg-rose-50 text-accent-rose rounded-lg">
+                        <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-4 w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                    <div id="bar-defect-rate" class="h-full bg-accent-rose transition-all duration-1000" style="width: 0%"></div>
+                </div>
+                <p class="text-xs text-slate-400 mt-2 text-right">Threshold Max: 5.0%</p>
+            </div>
+
+            <!-- 3. Cost of Quality (Financial Impact) -->
+            <div class="glass-panel p-5 rounded-2xl metric-card border-l-4 border-accent-amber">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Est. Kerugian (Hari Ini)</p>
+                        <h3 class="text-2xl font-bold text-dark-900 mt-2 tracking-tight">Rp <span id="kpi-loss">0</span></h3>
+                    </div>
+                    <div class="p-2 bg-amber-50 text-accent-amber rounded-lg">
+                        <i class="fa-solid fa-money-bill-wave text-xl"></i>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-500 mt-4">
+                    <i class="fa-solid fa-arrow-up text-accent-rose mr-1"></i>Material + Wasted Labor
+                </p>
+            </div>
+
+            <!-- 4. Top Offender -->
+            <div class="glass-panel p-5 rounded-2xl metric-card border-l-4 border-accent-purple">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Top Defect Issue</p>
+                        <h3 class="text-xl font-bold text-dark-900 mt-2" id="kpi-top-issue">Loading...</h3>
+                    </div>
+                    <div class="p-2 bg-purple-50 text-accent-purple rounded-lg">
+                        <i class="fa-solid fa-crosshairs text-xl"></i>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center justify-between">
+                    <span class="text-xs text-slate-500">Kontribusi:</span>
+                    <span class="text-sm font-bold text-accent-purple" id="kpi-top-contrib">0%</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- DECISION SUPPORT & PARETO (THE CORE SPK) -->
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Pareto Analysis Chart -->
+            <div class="glass-panel p-6 rounded-2xl shadow-sm lg:col-span-2">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-lg font-bold text-dark-900">Analisis Pareto (80/20 Rule)</h2>
+                        <p class="text-xs text-slate-500">Prioritas perbaikan berdasarkan frekuensi kejadian</p>
+                    </div>
+                    <button class="text-xs bg-slate-100 hover:bg-slate-200 px-3 py-1 rounded text-slate-600 transition">Detail Data</button>
+                </div>
+                <div class="relative h-72 w-full">
+                    <canvas id="chartPareto"></canvas>
+                </div>
+            </div>
+
+            <!-- AI / SPK Insight Panel -->
+            <div class="bg-dark-900 text-white p-6 rounded-2xl shadow-xl flex flex-col relative overflow-hidden">
+                <!-- Decorative background elements -->
+                <div class="absolute top-0 right-0 w-32 h-32 bg-accent-blue opacity-10 rounded-full blur-2xl -mr-10 -mt-10"></div>
+                <div class="absolute bottom-0 left-0 w-32 h-32 bg-accent-purple opacity-10 rounded-full blur-2xl -ml-10 -mb-10"></div>
+                
+                <div class="flex items-center gap-3 mb-6 relative z-10">
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center animate-pulse">
+                        <i class="fa-solid fa-robot text-xs"></i>
+                    </div>
+                    <h3 class="font-bold text-lg">AI Recommendations</h3>
+                </div>
+
+                <div id="insight-container" class="space-y-4 relative z-10 overflow-y-auto pr-2 custom-scroll flex-1">
+                    <!-- Insights will be injected here -->
+                    <div class="animate-pulse flex space-x-4">
+                        <div class="flex-1 space-y-2 py-1">
+                            <div class="h-2 bg-slate-700 rounded"></div>
+                            <div class="h-2 bg-slate-700 rounded w-5/6"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 pt-4 border-t border-slate-700 relative z-10">
+                    <button onclick="generateInsights()" class="w-full py-2 bg-accent-blue hover:bg-blue-600 text-white text-sm font-bold rounded-lg transition shadow-lg shadow-blue-500/20">
+                        Generate New Analysis
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- CORRELATION & HEATMAP -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <!-- Correlation Scatter Plot (Speed vs Defect) -->
+            <div class="glass-panel p-6 rounded-2xl shadow-sm">
+                <div class="mb-4">
+                    <h2 class="text-lg font-bold text-dark-900">Analisis Korelasi: Speed vs Defect</h2>
+                    <p class="text-xs text-slate-500">Apakah kecepatan produksi tinggi menyebabkan cacat?</p>
+                </div>
+                <div class="relative h-64 w-full">
+                    <canvas id="chartScatter"></canvas>
+                </div>
+                <div class="mt-3 flex items-center justify-center gap-4 text-xs">
+                    <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-500"></span> Zona Aman</div>
+                    <div class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500"></span> Zona Berbahaya (>1200 uph)</div>
+                </div>
+            </div>
+
+            <!-- Factory Floor Heatmap -->
+            <div class="glass-panel p-6 rounded-2xl shadow-sm">
+                <div class="mb-4 flex justify-between items-end">
+                    <div>
+                        <h2 class="text-lg font-bold text-dark-900">Defect Heatmap Location</h2>
+                        <p class="text-xs text-slate-500">Distribusi cacat berdasarkan Line Produksi</p>
+                    </div>
+                    <div class="flex gap-1 text-xs font-mono">
+                        <span class="px-2 py-0.5 bg-green-100 rounded">Low</span>
+                        <span class="px-2 py-0.5 bg-yellow-100 rounded">Med</span>
+                        <span class="px-2 py-0.5 bg-red-100 rounded">High</span>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 gap-4">
+                    <!-- Gedung A -->
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 mb-2">GEDUNG A (Sports)</p>
+                        <div class="grid grid-cols-4 gap-2" id="heatmap-container-A">
+                            <!-- Heatmap cells injected via JS -->
+                        </div>
+                    </div>
+                    <!-- Gedung B -->
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 mb-2">GEDUNG B (Formal)</p>
+                        <div class="grid grid-cols-4 gap-2" id="heatmap-container-B">
+                            <!-- Heatmap cells injected via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DETAILED DEFECT LOG (SPK EVIDENCE) -->
+        <section class="glass-panel rounded-2xl overflow-hidden shadow-sm">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                <h2 class="text-lg font-bold text-dark-900">Top 5 Critical Lines (Priority Action)</h2>
+                <span class="text-xs text-rose-500 font-bold bg-rose-50 px-3 py-1 rounded-full animate-pulse">Action Required</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 text-xs uppercase text-slate-500 font-semibold tracking-wider">
+                            <th class="px-6 py-4">Line ID</th>
+                            <th class="px-6 py-4">Produk</th>
+                            <th class="px-6 py-4 text-center">Defect Rate</th>
+                            <th class="px-6 py-4">Dominant Defect</th>
+                            <th class="px-6 py-4">Suggested Action (SPK)</th>
+                            <th class="px-6 py-4 text-right">Trend</th>
+                        </tr>
+                    </thead>
+                    <tbody id="priority-table-body" class="divide-y divide-slate-100 text-sm">
+                        <!-- Content Injected via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        /* DATA SIMULATION & SPK LOGIC 
+           ---------------------------
+           Focus: Realistic defect types, root cause simulation, and recommendation generation.
+        */
+
+        // 1. CONFIGURATION
+        const DEFECT_TYPES = [
+            { id: 'D01', name: 'Open Bond (Lem Lepas)', cause: 'Suhu Oven Kurang', severity: 'Critical' },
+            { id: 'D02', name: 'Dirty/Stain (Kotor)', cause: 'Handling Operator', severity: 'Minor' },
+            { id: 'D03', name: 'Crooked Stitch (Jahitan)', cause: 'Setting Mesin Jahit', severity: 'Major' },
+            { id: 'D04', name: 'Sole Detachment', cause: 'Tekanan Press Kurang', severity: 'Critical' },
+            { id: 'D05', name: 'Material Tear', cause: 'Kualitas Material', severity: 'Major' }
+        ];
+
+        const LINES = [
+            { id: 'A-1', building: 'A', speed: 1100 }, { id: 'A-2', building: 'A', speed: 1250 }, 
+            { id: 'A-3', building: 'A', speed: 950 },  { id: 'A-4', building: 'A', speed: 1150 },
+            { id: 'B-1', building: 'B', speed: 1000 }, { id: 'B-2', building: 'B', speed: 1050 }, 
+            { id: 'B-3', building: 'B', speed: 1300 }, { id: 'B-4', building: 'B', speed: 900 }
+        ];
+
+        let productionData = [];
+
+        // 2. DATA GENERATION
+        function initData() {
+            productionData = LINES.map(line => {
+                // Simulate production based on speed + variance
+                const output = Math.floor(line.speed * 0.8) + Math.floor(Math.random() * 100);
+                
+                // Simulate Defect Rate increasing with Speed (Correlation)
+                let baseDefectRate = 0.01; // 1%
+                if (line.speed > 1200) baseDefectRate = 0.05; // High speed = high defect risk
+                
+                const defectCount = Math.floor(output * (baseDefectRate + (Math.random() * 0.03)));
+                
+                // Determine dominant defect based on random logic for simulation
+                const dominantDefectIndex = Math.floor(Math.random() * DEFECT_TYPES.length);
+                const dominantDefect = DEFECT_TYPES[dominantDefectIndex];
+
+                // Create breakdown
+                let breakdown = {};
+                DEFECT_TYPES.forEach(d => breakdown[d.name] = 0);
+                
+                // Fill breakdown
+                let remainingDefects = defectCount;
+                breakdown[dominantDefect.name] = Math.floor(remainingDefects * 0.6); // 60% is dominant
+                remainingDefects -= breakdown[dominantDefect.name];
+                // Distribute rest randomly
+                
+                return {
+                    lineId: line.id,
+                    building: line.building,
+                    output: output,
+                    defects: defectCount,
+                    defectRate: ((defectCount/output)*100).toFixed(1),
+                    speed: line.speed, // Units per Hour
+                    dominantDefect: dominantDefect,
+                    breakdown: breakdown,
+                    status: defectCount > (output * 0.04) ? 'Critical' : (defectCount > (output * 0.02) ? 'Warning' : 'Normal')
+                };
+            });
+        }
+
+        // 3. SPK ENGINE (Generate Recommendations)
+        function generateInsights() {
+            const container = document.getElementById('insight-container');
+            container.innerHTML = ''; // Clear
+
+            // A. Analyze Total Defect Rate
+            const totalOut = productionData.reduce((acc, curr) => acc + curr.output, 0);
+            const totalDef = productionData.reduce((acc, curr) => acc + curr.defects, 0);
+            const globalRate = (totalDef / totalOut) * 100;
+
+            // B. Find Top Offender (Pareto Logic)
+            let defectCounts = {};
+            productionData.forEach(p => {
+                for (const [type, count] of Object.entries(p.breakdown)) {
+                    defectCounts[type] = (defectCounts[type] || 0) + (isNaN(count) ? 0 : count); // Safety check
+                }
+            });
+            // Add what was assigned as dominant
+            productionData.forEach(p => {
+                 defectCounts[p.dominantDefect.name] += p.breakdown[p.dominantDefect.name] || 0;
+            });
+
+            const sortedDefects = Object.entries(defectCounts).sort((a,b) => b[1] - a[1]);
+            const topDefect = sortedDefects[0];
+
+            // C. Find Critical Lines
+            const criticalLines = productionData.filter(l => l.status === 'Critical');
+
+            // --- BUILD INSIGHT CARDS ---
+
+            // Insight 1: Global Status
+            let statusColor = globalRate > 3 ? 'text-accent-rose' : 'text-accent-teal';
+            let statusMsg = globalRate > 3 ? 'KONDISI KRITIS' : 'KONDISI STABIL';
+            addInsightCard(
+                'fa-heart-pulse', 
+                statusColor, 
+                'Status Produksi Global', 
+                `Saat ini pabrik dalam <b>${statusMsg}</b> dengan defect rate <b>${globalRate.toFixed(2)}%</b>.`
+            );
+
+            // Insight 2: Root Cause Suggestion (SPK Core)
+            const rootCauseObj = DEFECT_TYPES.find(d => d.name === topDefect[0]);
+            addInsightCard(
+                'fa-wrench',
+                'text-accent-amber',
+                'Prioritas Perbaikan (Pareto #1)',
+                `Masalah utama adalah <b>${topDefect[0]}</b>. <br>
+                 <span class="text-xs text-slate-400 mt-1 block">Rekomendasi Tindakan:</span>
+                 <ul class="list-disc list-inside text-xs mt-1 text-slate-200">
+                    <li>${rootCauseObj ? rootCauseObj.cause : 'Investigasi Manual'}</li>
+                    <li>Lakukan Maintenance Check sekarang.</li>
+                 </ul>`
+            );
+
+            // Insight 3: Speed Correlation Warning
+            const speedingLines = productionData.filter(l => l.speed > 1200 && parseFloat(l.defectRate) > 3);
+            if(speedingLines.length > 0) {
+                addInsightCard(
+                    'fa-gauge-high',
+                    'text-accent-purple',
+                    'Deteksi Anomali Kecepatan',
+                    `Terdeteksi <b>${speedingLines.length} Line</b> berjalan >1200 UPH dengan defect tinggi.
+                     <br><span class="text-xs bg-red-500/20 px-2 py-0.5 rounded text-red-300 mt-1 inline-block">Saran: Turunkan speed mesin ke 1100.</span>`
+                );
+            }
+        }
+
+        function addInsightCard(icon, colorClass, title, content) {
+            const html = `
+                <div class="bg-dark-800 p-3 rounded-xl border border-dark-700 hover:border-slate-500 transition">
+                    <div class="flex items-start gap-3">
+                        <div class="mt-1 ${colorClass}"><i class="fa-solid ${icon}"></i></div>
+                        <div>
+                            <h4 class="text-sm font-bold text-slate-200">${title}</h4>
+                            <p class="text-xs text-slate-400 mt-1 leading-relaxed">${content}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('insight-container').insertAdjacentHTML('beforeend', html);
+        }
+
+        // 4. CHART RENDERING
+        let paretoChart, scatterChart;
+
+        function renderCharts() {
+            // A. PARETO CHART DATA PREP
+            let defectCounts = {};
+            // Initialize
+            DEFECT_TYPES.forEach(d => defectCounts[d.name] = 0);
+            // Aggregate
+            productionData.forEach(p => {
+               // Approximate aggregation for the chart from simulation data
+               defectCounts[p.dominantDefect.name] += (p.defects * 0.7); // Assume 70% is dominant
+               // Add noise to others
+               DEFECT_TYPES.forEach(d => {
+                   if(d.name !== p.dominantDefect.name) defectCounts[d.name] += (p.defects * 0.3 / 4);
+               });
+            });
+
+            const labels = Object.keys(defectCounts);
+            const data = Object.values(defectCounts);
+            
+            // Sort Descending
+            const combined = labels.map((l, i) => ({ label: l, value: data[i] }));
+            combined.sort((a,b) => b.value - a.value);
+            
+            const sortedLabels = combined.map(c => c.label);
+            const sortedData = combined.map(c => Math.floor(c.value));
+            
+            // Calculate Cumulative %
+            let cumulativeData = [];
+            let sum = 0;
+            let total = sortedData.reduce((a,b) => a+b, 0);
+            sortedData.forEach(val => {
+                sum += val;
+                cumulativeData.push((sum/total) * 100);
+            });
+
+            // B. RENDER PARETO
+            const ctxPareto = document.getElementById('chartPareto').getContext('2d');
+            paretoChart = new Chart(ctxPareto, {
+                type: 'bar',
+                data: {
+                    labels: sortedLabels,
+                    datasets: [
+                        {
+                            label: 'Cumulative %',
+                            data: cumulativeData,
+                            type: 'line',
+                            borderColor: '#3b82f6',
+                            borderWidth: 2,
+                            yAxisID: 'y1',
+                            pointRadius: 3
+                        },
+                        {
+                            label: 'Defect Count',
+                            data: sortedData,
+                            backgroundColor: 'rgba(244, 63, 94, 0.7)', // Rose
+                            borderRadius: 4,
+                            yAxisID: 'y',
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        y: { beginAtZero: true, grid: { display: false } },
+                        y1: { position: 'right', min: 0, max: 100, grid: { borderDash: [2, 4] } },
+                        x: { grid: { display: false } }
+                    },
+                    plugins: { legend: { display: true } }
+                }
+            });
+
+            // C. RENDER SCATTER (Speed vs Defect)
+            const scatterPoints = productionData.map(p => ({
+                x: p.speed,
+                y: parseFloat(p.defectRate),
+                line: p.lineId
+            }));
+
+            const ctxScatter = document.getElementById('chartScatter').getContext('2d');
+            scatterChart = new Chart(ctxScatter, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Line Performance',
+                        data: scatterPoints,
+                        backgroundColor: (ctx) => {
+                            const val = ctx.raw?.y;
+                            return val > 3 ? '#ef4444' : '#10b981'; // Red if defect > 3%, else Green
+                        },
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { title: { display: true, text: 'Speed (Unit/Hour)' } },
+                        y: { title: { display: true, text: 'Defect Rate (%)' } }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Line ${context.raw.line}: ${context.raw.y}% Defect @ ${context.raw.x} UPH`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 5. HTML INJECTORS
+
+        function renderHeatmap() {
+            // Defines opacity based on defect count
+            const getHeatClass = (defects) => {
+                if(defects < 10) return 'bg-green-100 border-green-200 text-green-700';
+                if(defects < 20) return 'bg-yellow-100 border-yellow-200 text-yellow-700';
+                if(defects < 35) return 'bg-orange-200 border-orange-300 text-orange-800';
+                return 'bg-red-500 border-red-600 text-white pulse-red'; // Critical
+            };
+
+            ['A', 'B'].forEach(bCode => {
+                const container = document.getElementById(`heatmap-container-${bCode}`);
+                container.innerHTML = '';
+                
+                const lines = productionData.filter(p => p.building === bCode);
+                lines.forEach(l => {
+                    const cls = getHeatClass(l.defects);
+                    const html = `
+                        <div class="heatmap-cell h-16 rounded-lg border flex flex-col items-center justify-center cursor-pointer ${cls}" title="Line ${l.lineId}: ${l.defects} Defects">
+                            <span class="text-xs font-bold font-mono">${l.lineId}</span>
+                            <span class="text-lg font-bold">${l.defects}</span>
+                        </div>
+                    `;
+                    container.innerHTML += html;
+                });
+            });
+        }
+
+        function renderPriorityTable() {
+            const tbody = document.getElementById('priority-table-body');
+            tbody.innerHTML = '';
+
+            // Sort by Defect Rate Descending
+            const sorted = [...productionData].sort((a,b) => parseFloat(b.defectRate) - parseFloat(a.defectRate));
+
+            // Top 5
+            sorted.slice(0, 5).forEach(row => {
+                const isCritical = row.status === 'Critical';
+                const defectRateClass = isCritical ? 'text-rose-600 font-bold' : 'text-slate-700';
+                
+                const tr = `
+                    <tr class="hover:bg-slate-50 transition group">
+                        <td class="px-6 py-4 font-mono font-medium text-slate-600">${row.lineId}</td>
+                        <td class="px-6 py-4">Sepatu Model-${row.building}0${Math.floor(Math.random()*9)}</td>
+                        <td class="px-6 py-4 text-center ${defectRateClass}">${row.defectRate}%</td>
+                        <td class="px-6 py-4">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
+                                ${row.dominantDefect.name}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-xs text-slate-500">
+                            <i class="fa-solid fa-arrow-right text-accent-blue mr-1"></i>
+                            ${row.dominantDefect.cause}
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                             <div class="w-20 ml-auto h-8 bg-slate-100 rounded flex items-end justify-between px-1 pb-1 gap-0.5">
+                                 <div class="w-1 bg-slate-300 h-1/3"></div>
+                                 <div class="w-1 bg-slate-300 h-2/3"></div>
+                                 <div class="w-1 bg-slate-300 h-1/2"></div>
+                                 <div class="w-1 ${isCritical ? 'bg-rose-500' : 'bg-slate-400'} h-full"></div>
+                             </div>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += tr;
+            });
+        }
+
+        function updateKPIs() {
+            const totalDefects = productionData.reduce((a,b) => a + b.defects, 0);
+            const totalProd = productionData.reduce((a,b) => a + b.output, 0);
+            const rate = ((totalDefects/totalProd)*100).toFixed(1);
+            
+            // KPI 1: Rate
+            document.getElementById('kpi-defect-rate').innerText = rate + '%';
+            document.getElementById('bar-defect-rate').style.width = Math.min((rate/5)*100, 100) + '%';
+            
+            // KPI 2: Top Issue (Simplified)
+            // Re-using logic from Insights but simpler display
+            let defectCounts = {};
+            productionData.forEach(p => { defectCounts[p.dominantDefect.name] = (defectCounts[p.dominantDefect.name]||0) + p.breakdown[p.dominantDefect.name] });
+            const top = Object.entries(defectCounts).sort((a,b) => b[1]-a[1])[0];
+            
+            document.getElementById('kpi-top-issue').innerText = top[0];
+            const contribution = ((top[1]/totalDefects)*100).toFixed(0);
+            document.getElementById('kpi-top-contrib').innerText = contribution + '% Total Defect';
+            
+            // KPI 3: Loss (Assume 1 Defect = Rp 45.000 Cost)
+            const loss = totalDefects * 45000;
+            document.getElementById('kpi-loss').innerText = loss.toLocaleString('id-ID');
+        }
+
+        // 6. MASTER REFRESH FUNCTION
+        function refreshData() {
+            initData();
+            updateKPIs();
+            renderCharts();
+            generateInsights();
+            renderHeatmap();
+            renderPriorityTable();
+        }
+
+        // INIT
+        window.onload = function() {
+            refreshData();
+        };
+
+    </script>
+</body>
+</html>
