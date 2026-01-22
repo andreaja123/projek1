@@ -1,607 +1,904 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartFactory - Dashboard Produksi Sepatu IoT</title>
-    
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SmartFactory - Dashboard Produksi Sepatu</title>
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
+
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+
     <!-- FontAwesome & Google Fonts -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
 
     <!-- Custom Config for Tailwind colors to match Industry Standards -->
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    colors: {
-                        brand: {
-                            50: '#f0f9ff',
-                            100: '#e0f2fe',
-                            500: '#0ea5e9', // Sky Blue
-                            600: '#0284c7',
-                            900: '#0c4a6e',
-                        },
-                        status: {
-                            ok: '#10b981',    // Emerald 500
-                            warning: '#f59e0b', // Amber 500
-                            critical: '#ef4444' // Red 500
-                        }
-                    }
-                }
-            }
-        }
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+            },
+            colors: {
+              brand: {
+                50: "#f0f9ff",
+                100: "#e0f2fe",
+                500: "#0ea5e9", // Sky Blue
+                600: "#0284c7",
+                900: "#0c4a6e",
+              },
+              status: {
+                ok: "#10b981", // Emerald 500
+                warning: "#f59e0b", // Amber 500
+                critical: "#ef4444", // Red 500
+              },
+            },
+          },
+        },
+      };
     </script>
 
     <style>
-        /* Custom Scrollbar for sleek look */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f5f9; 
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1; 
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8; 
-        }
-        
-        .card-hover {
-            transition: all 0.3s ease;
-        }
-        .card-hover:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-        }
-        
-        /* Animation for live indicator */
-        .blink-dot {
-            animation: blinker 1.5s linear infinite;
-        }
-        @keyframes blinker {
-            50% { opacity: 0; }
-        }
-    </style>
-</head>
-<body class="bg-slate-50 text-slate-800 font-sans antialiased">
+      /* Custom Scrollbar for sleek look */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f1f5f9;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
 
+      .card-hover {
+        transition: all 0.3s ease;
+      }
+      .card-hover:hover {
+        transform: translateY(-2px);
+        box-shadow:
+          0 10px 15px -3px rgba(0, 0, 0, 0.1),
+          0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      }
+
+      /* Animation for live indicator */
+      .blink-dot {
+        animation: blinker 1.5s linear infinite;
+      }
+      @keyframes blinker {
+        50% {
+          opacity: 0;
+        }
+      }
+    </style>
+  </head>
+  <body class="bg-slate-50 text-slate-800 font-sans antialiased">
     <!-- NAVIGATION BAR -->
     <nav class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <i class="fa-solid fa-shoe-prints text-brand-600 text-2xl mr-3"></i>
-                    <span class="font-bold text-xl tracking-tight text-slate-900">SmartShoe<span class="text-brand-600">Factory</span> IoT</span>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <div class="text-right hidden md:block">
-                        <div id="current-date" class="text-xs text-slate-500 font-medium"></div>
-                        <div id="current-time" class="text-sm font-bold text-slate-800"></div>
-                    </div>
-                    <div class="h-8 w-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-600">
-                        <i class="fa-solid fa-user"></i>
-                    </div>
-                </div>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16">
+          <div class="flex items-center">
+            <i class="fa-solid fa-shoe-prints text-brand-600 text-2xl mr-3"></i>
+            <span class="font-bold text-xl tracking-tight text-slate-900"
+              >SmartShoe<span class="text-brand-600">Factory</span> IoT</span
+            >
+          </div>
+          <div class="flex items-center space-x-4">
+            <div class="text-right hidden md:block">
+              <div
+                id="current-date"
+                class="text-xs text-slate-500 font-medium"
+              ></div>
+              <div
+                id="current-time"
+                class="text-sm font-bold text-slate-800"
+              ></div>
             </div>
+            <div
+              class="h-8 w-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-600"
+            >
+              <i class="fa-solid fa-user"></i>
+            </div>
+          </div>
         </div>
+      </div>
     </nav>
 
     <!-- MAIN CONTENT -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-
-        <!-- LEVEL 1: EXECUTIVE SUMMARY -->
-        <section id="executive-summary" class="animate-fade-in-up">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-bold text-slate-800 border-l-4 border-brand-500 pl-3">Executive Summary</h2>
-                <span class="flex items-center text-xs font-semibold px-2 py-1 bg-green-100 text-green-700 rounded-full">
-                    <span class="w-2 h-2 bg-green-500 rounded-full mr-2 blink-dot"></span> Live IoT Data
-                </span>
-            </div>
-
-            <!-- KPI Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-                <!-- Total Prod -->
-                <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-100 card-hover">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Produksi</p>
-                            <h3 class="text-2xl font-bold text-slate-800 mt-1" id="kpi-total">0</h3>
-                        </div>
-                        <div class="p-2 bg-blue-50 rounded-lg text-brand-600"><i class="fa-solid fa-layer-group"></i></div>
-                    </div>
-                    <p class="text-xs text-green-600 mt-2 font-medium"><i class="fa-solid fa-arrow-up"></i> +5.2% vs kmrn</p>
-                </div>
-
-                <!-- Total OK -->
-                <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-100 card-hover">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Good (OK)</p>
-                            <h3 class="text-2xl font-bold text-status-ok mt-1" id="kpi-ok">0</h3>
-                        </div>
-                        <div class="p-2 bg-green-50 rounded-lg text-status-ok"><i class="fa-solid fa-check-circle"></i></div>
-                    </div>
-                    <p class="text-xs text-slate-400 mt-2">Target: 98%</p>
-                </div>
-
-                <!-- Total Defect -->
-                <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-100 card-hover">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Defect (NG)</p>
-                            <h3 class="text-2xl font-bold text-status-critical mt-1" id="kpi-defect">0</h3>
-                        </div>
-                        <div class="p-2 bg-red-50 rounded-lg text-status-critical"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                    </div>
-                    <p class="text-xs text-slate-400 mt-2">Max limit: 2%</p>
-                </div>
-
-                <!-- Defect Rate -->
-                <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-100 card-hover">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Defect Rate</p>
-                            <h3 class="text-2xl font-bold text-slate-800 mt-1" id="kpi-rate">0%</h3>
-                        </div>
-                        <div class="p-2 bg-yellow-50 rounded-lg text-yellow-600"><i class="fa-solid fa-chart-pie"></i></div>
-                    </div>
-                    <div class="w-full bg-slate-200 rounded-full h-1.5 mt-3">
-                        <div class="bg-brand-500 h-1.5 rounded-full" id="kpi-rate-bar" style="width: 0%"></div>
-                    </div>
-                </div>
-
-                <!-- Active Lines -->
-                <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-100 card-hover">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Line Aktif</p>
-                            <h3 class="text-2xl font-bold text-slate-800 mt-1" id="kpi-lines">0/12</h3>
-                        </div>
-                        <div class="p-2 bg-slate-100 rounded-lg text-slate-600"><i class="fa-solid fa-network-wired"></i></div>
-                    </div>
-                    <p class="text-xs text-green-600 mt-2 font-medium">Semua Sistem Online</p>
-                </div>
-            </div>
-
-            <!-- Top Level Charts -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Pie Chart OK vs Defect -->
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100">
-                    <h3 class="text-sm font-bold text-slate-700 mb-4">Rasio Kualitas Global</h3>
-                    <div class="relative h-64 w-full flex justify-center">
-                        <canvas id="chartGlobalQuality"></canvas>
-                    </div>
-                </div>
-                <!-- Bar Chart Prod per Gedung -->
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 lg:col-span-2">
-                    <h3 class="text-sm font-bold text-slate-700 mb-4">Total Produksi per Gedung</h3>
-                    <div class="relative h-64 w-full">
-                        <canvas id="chartBuildingProd"></canvas>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- LEVEL 2: GEDUNG OVERVIEW -->
-        <section id="building-overview" class="pt-4 border-t border-slate-200">
-            <div class="flex flex-col md:flex-row justify-between items-center mb-6">
-                <h2 class="text-xl font-bold text-slate-800 mb-4 md:mb-0">Overview Gedung & Line</h2>
-                <div class="relative">
-                    <select id="buildingSelect" class="block appearance-none w-full bg-white border border-slate-300 text-slate-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-brand-500 shadow-sm cursor-pointer transition">
-                        <option value="all">Semua Gedung</option>
-                        <option value="A">Gedung A (Sport Shoes)</option>
-                        <option value="B">Gedung B (Formal Shoes)</option>
-                        <option value="C">Gedung C (Kids Shoes)</option>
-                    </select>
-                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-700">
-                        <i class="fa-solid fa-chevron-down text-xs"></i>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Gedung Detail Stats (Dynamic) -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                <!-- Bar Chart: Line Performance in Selected Building -->
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 lg:col-span-2">
-                    <h3 class="text-sm font-bold text-slate-700 mb-4">Performa Produksi per Line <span id="lbl-building-name" class="text-brand-600"></span></h3>
-                    <div class="relative h-72 w-full">
-                        <canvas id="chartLinePerformance"></canvas>
-                    </div>
-                </div>
-                <!-- Line Chart: Trend -->
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100">
-                    <h3 class="text-sm font-bold text-slate-700 mb-4">Trend Produksi (Per Jam)</h3>
-                    <div class="relative h-72 w-full">
-                        <canvas id="chartHourlyTrend"></canvas>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- LEVEL 3: LINE DETAIL (GRID CARDS) -->
-        <section id="line-detail">
-            <h3 class="text-lg font-bold text-slate-700 mb-4">Status Real-time per Line</h3>
-            <div id="lines-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <!-- Cards will be injected by JS here -->
-            </div>
-        </section>
-
-        <!-- LEVEL 4: DEFECT ANALYSIS -->
-        <section id="defect-analysis" class="pt-4 mt-8 border-t border-slate-200">
-            <h2 class="text-xl font-bold text-slate-800 mb-6">Analisis Defect & Kualitas</h2>
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100">
-                    <h3 class="text-sm font-bold text-slate-700 mb-2">Pareto Jenis Defect</h3>
-                    <div class="relative h-60 w-full flex justify-center">
-                        <canvas id="chartDefectTypes"></canvas>
-                    </div>
-                </div>
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 lg:col-span-2">
-                    <h3 class="text-sm font-bold text-slate-700 mb-2">Tren Defect vs Waktu</h3>
-                    <div class="relative h-60 w-full">
-                        <canvas id="chartDefectTrend"></canvas>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- LEVEL 5: REAL-TIME MONITORING (TV MODE) -->
-        <section id="real-time-table" class="pt-4 mt-8">
-            <div class="bg-slate-900 rounded-xl overflow-hidden shadow-lg">
-                <div class="px-6 py-4 bg-slate-800 border-b border-slate-700 flex justify-between items-center">
-                    <h2 class="text-white font-bold text-lg"><i class="fa-solid fa-satellite-dish mr-2 text-green-400 blink-dot"></i> Live Feed Monitor</h2>
-                    <span class="text-slate-400 text-xs font-mono">Auto-refresh: 5s</span>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm text-slate-300">
-                        <thead class="bg-slate-900 text-xs uppercase font-semibold text-slate-400">
-                            <tr>
-                                <th class="px-6 py-3">Gedung</th>
-                                <th class="px-6 py-3">Line ID</th>
-                                <th class="px-6 py-3 text-right">Output (Pasang)</th>
-                                <th class="px-6 py-3 text-right">Defect</th>
-                                <th class="px-6 py-3 text-center">Status</th>
-                                <th class="px-6 py-3 text-right">Last Update</th>
-                            </tr>
-                        </thead>
-                        <tbody id="live-table-body" class="divide-y divide-slate-700 font-mono">
-                            <!-- Rows injected via JS -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </section>
-
-        <!-- LEVEL 6: HISTORY & REPORTS -->
-        <section id="reports" class="pt-8 pb-12 mt-8 border-t border-slate-200">
-            <div class="flex flex-col md:flex-row justify-between items-end mb-4">
-                <div>
-                    <h2 class="text-xl font-bold text-slate-800">Histori & Laporan</h2>
-                    <p class="text-sm text-slate-500">Arsip data produksi 30 hari terakhir</p>
-                </div>
-                <div class="flex space-x-2 mt-4 md:mt-0">
-                    <input type="date" class="border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-brand-500">
-                    <button onclick="exportData('PDF')" class="bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded text-sm font-medium transition"><i class="fa-solid fa-file-pdf mr-2"></i>PDF</button>
-                    <button onclick="exportData('Excel')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium transition"><i class="fa-solid fa-file-excel mr-2"></i>Excel</button>
-                </div>
-            </div>
-            
-            <div class="bg-white rounded-lg shadow border border-slate-200 overflow-hidden">
-                <table class="min-w-full divide-y divide-slate-200">
-                    <thead class="bg-slate-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Tanggal</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Gedung</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Total Target</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Total Aktual</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Efficiency</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-slate-200" id="history-table">
-                        <!-- Static history mock data -->
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">2023-10-24</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">Gedung A</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-slate-900">4,000</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-slate-900">3,950</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-green-600 font-bold">98.7%</td>
-                        </tr>
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">2023-10-24</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">Gedung B</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-slate-900">3,500</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-slate-900">3,100</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-yellow-600 font-bold">88.5%</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-    </main>
-    
-    <footer class="bg-white border-t border-slate-200 py-6 mt-8">
-        <div class="max-w-7xl mx-auto px-4 text-center text-sm text-slate-500">
-            &copy; 2023 SmartShoe Mfg. All rights reserved. System Ver 2.0.1
+      <!-- LEVEL 1: EXECUTIVE SUMMARY -->
+      <section id="executive-summary" class="animate-fade-in-up">
+        <div class="flex justify-between items-center mb-4">
+          <h2
+            class="text-2xl font-bold text-slate-800 border-l-4 border-brand-500 pl-3"
+          >
+            Executive Summary
+          </h2>
+          <span
+            class="flex items-center text-xs font-semibold px-2 py-1 bg-green-100 text-green-700 rounded-full"
+          >
+            <span
+              class="w-2 h-2 bg-green-500 rounded-full mr-2 blink-dot"
+            ></span>
+            Live Data
+          </span>
         </div>
+
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+          <!-- Total Prod -->
+          <div
+            class="bg-white rounded-xl p-5 shadow-sm border border-slate-100 card-hover"
+          >
+            <div class="flex justify-between items-start">
+              <div>
+                <p
+                  class="text-xs font-semibold text-slate-500 uppercase tracking-wider"
+                >
+                  Total Produksi
+                </p>
+                <h3
+                  class="text-2xl font-bold text-slate-800 mt-1"
+                  id="kpi-total"
+                >
+                  0
+                </h3>
+              </div>
+              <div class="p-2 bg-blue-50 rounded-lg text-brand-600">
+                <i class="fa-solid fa-layer-group"></i>
+              </div>
+            </div>
+            <p class="text-xs text-green-600 mt-2 font-medium">
+              <i class="fa-solid fa-arrow-up"></i> +5.2% vs kmrn
+            </p>
+          </div>
+
+          <!-- Total OK -->
+          <div
+            class="bg-white rounded-xl p-5 shadow-sm border border-slate-100 card-hover"
+          >
+            <div class="flex justify-between items-start">
+              <div>
+                <p
+                  class="text-xs font-semibold text-slate-500 uppercase tracking-wider"
+                >
+                  Good (OK)
+                </p>
+                <h3 class="text-2xl font-bold text-status-ok mt-1" id="kpi-ok">
+                  0
+                </h3>
+              </div>
+              <div class="p-2 bg-green-50 rounded-lg text-status-ok">
+                <i class="fa-solid fa-check-circle"></i>
+              </div>
+            </div>
+            <p class="text-xs text-slate-400 mt-2">Target: 98%</p>
+          </div>
+
+          <!-- Total Defect -->
+          <div
+            class="bg-white rounded-xl p-5 shadow-sm border border-slate-100 card-hover"
+          >
+            <div class="flex justify-between items-start">
+              <div>
+                <p
+                  class="text-xs font-semibold text-slate-500 uppercase tracking-wider"
+                >
+                  Defect (NG)
+                </p>
+                <h3
+                  class="text-2xl font-bold text-status-critical mt-1"
+                  id="kpi-defect"
+                >
+                  0
+                </h3>
+              </div>
+              <div class="p-2 bg-red-50 rounded-lg text-status-critical">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+              </div>
+            </div>
+            <p class="text-xs text-slate-400 mt-2">Max limit: 2%</p>
+          </div>
+
+          <!-- Defect 1 -->
+          <div
+            class="bg-white rounded-xl p-5 shadow-sm border border-slate-100 card-hover"
+          >
+            <p class="text-xs font-semibold text-slate-500 uppercase">
+              Defect 1
+            </p>
+            <h3 class="text-2xl font-bold text-red-600 mt-1" id="kpi-defect-1">
+              0
+            </h3>
+            <p class="text-xs text-slate-400 mt-2">Bagian dari NG</p>
+          </div>
+
+          <!-- Defect 2 -->
+          <div
+            class="bg-white rounded-xl p-5 shadow-sm border border-slate-100 card-hover"
+          >
+            <p class="text-xs font-semibold text-slate-500 uppercase">
+              Defect 2
+            </p>
+            <h3
+              class="text-2xl font-bold text-orange-600 mt-1"
+              id="kpi-defect-2"
+            >
+              0
+            </h3>
+            <p class="text-xs text-slate-400 mt-2">Bagian dari NG</p>
+          </div>
+
+          <!-- Defect 3 -->
+          <div
+            class="bg-white rounded-xl p-5 shadow-sm border border-slate-100 card-hover"
+          >
+            <p class="text-xs font-semibold text-slate-500 uppercase">
+              Defect 3
+            </p>
+            <h3
+              class="text-2xl font-bold text-yellow-600 mt-1"
+              id="kpi-defect-3"
+            >
+              0
+            </h3>
+            <p class="text-xs text-slate-400 mt-2">Bagian dari NG</p>
+          </div>
+        </div>
+
+        <!-- Top Level Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Pie Chart OK vs Defect -->
+          <div
+            class="bg-white p-5 rounded-xl shadow-sm border border-slate-100"
+          >
+            <h3 class="text-sm font-bold text-slate-700 mb-4">
+              Rasio Kualitas Global
+            </h3>
+            <div class="relative h-64 w-full flex justify-center">
+              <canvas id="chartGlobalQuality"></canvas>
+            </div>
+          </div>
+          <!-- Bar Chart Prod per Gedung -->
+          <div
+            class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 lg:col-span-2"
+          >
+            <h3 class="text-sm font-bold text-slate-700 mb-4">
+              Total Produksi per Gedung
+            </h3>
+            <div class="relative h-64 w-full">
+              <canvas id="chartBuildingProd"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- LEVEL 2: GEDUNG OVERVIEW -->
+      <section id="building-overview" class="pt-4 border-t border-slate-200">
+        <div
+          class="flex flex-col md:flex-row justify-between items-center mb-6"
+        >
+          <h2 class="text-xl font-bold text-slate-800 mb-4 md:mb-0">
+            Overview Gedung & Line
+          </h2>
+          <div class="relative">
+            <select
+              id="buildingSelect"
+              class="block appearance-none w-full bg-white border border-slate-300 text-slate-700 py-2 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-brand-500 shadow-sm cursor-pointer transition"
+            >
+              <option value="all">Semua Gedung</option>
+              <option value="A">Gedung A (Sport Shoes)</option>
+              <option value="B">Gedung B (Formal Shoes)</option>
+              <option value="C">Gedung C (Kids Shoes)</option>
+            </select>
+            <div
+              class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-700"
+            >
+              <i class="fa-solid fa-chevron-down text-xs"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gedung Detail Stats (Dynamic) -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <!-- Bar Chart: Line Performance in Selected Building -->
+          <div
+            class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 lg:col-span-2"
+          >
+            <h3 class="text-sm font-bold text-slate-700 mb-4">
+              Performa Produksi per Line
+              <span id="lbl-building-name" class="text-brand-600"></span>
+            </h3>
+            <div class="relative h-72 w-full">
+              <canvas id="chartLinePerformance"></canvas>
+            </div>
+          </div>
+          <!-- Line Chart: Trend -->
+          <div
+            class="bg-white p-5 rounded-xl shadow-sm border border-slate-100"
+          >
+            <h3 class="text-sm font-bold text-slate-700 mb-4">
+              Trend Produksi (Per Jam)
+            </h3>
+            <div class="relative h-72 w-full">
+              <canvas id="chartHourlyTrend"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- LEVEL 3: LINE DETAIL (GRID CARDS) -->
+      <section id="line-detail">
+        <h3 class="text-lg font-bold text-slate-700 mb-4">
+          Status Real-time per Line
+        </h3>
+        <div
+          id="lines-grid"
+          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+        >
+          <!-- Cards will be injected by JS here -->
+        </div>
+      </section>
+
+      <!-- LEVEL 4: DEFECT ANALYSIS -->
+      <section id="defect-analysis" class="pt-4 mt-8 border-t border-slate-200">
+        <h2 class="text-xl font-bold text-slate-800 mb-6">
+          Analisis Defect & Kualitas
+        </h2>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div
+            class="bg-white p-5 rounded-xl shadow-sm border border-slate-100"
+          >
+            <h3 class="text-sm font-bold text-slate-700 mb-2">
+              Pareto Jenis Defect
+            </h3>
+            <div class="relative h-60 w-full flex justify-center">
+              <canvas id="chartDefectTypes"></canvas>
+            </div>
+          </div>
+          <div
+            class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 lg:col-span-2"
+          >
+            <h3 class="text-sm font-bold text-slate-700 mb-2">
+              Tren Defect vs Waktu
+            </h3>
+            <div class="relative h-60 w-full">
+              <canvas id="chartDefectTrend"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- LEVEL 5: REAL-TIME MONITORING (TV MODE) -->
+      <section id="real-time-table" class="pt-4 mt-8">
+        <div class="bg-slate-900 rounded-xl overflow-hidden shadow-lg">
+          <div
+            class="px-6 py-4 bg-slate-800 border-b border-slate-700 flex justify-between items-center"
+          >
+            <h2 class="text-white font-bold text-lg">
+              <i
+                class="fa-solid fa-satellite-dish mr-2 text-green-400 blink-dot"
+              ></i>
+              Live Feed Monitor
+            </h2>
+            <span class="text-slate-400 text-xs font-mono"
+              >Auto-refresh: 5s</span
+            >
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-slate-300">
+              <thead
+                class="bg-slate-900 text-xs uppercase font-semibold text-slate-400"
+              >
+                <tr>
+                  <th class="px-6 py-3">Gedung</th>
+                  <th class="px-6 py-3">Line ID</th>
+                  <th class="px-6 py-3 text-right">Output (Pasang)</th>
+                  <th class="px-6 py-3 text-right">Defect</th>
+                  <th class="px-6 py-3 text-center">Status</th>
+                  <th class="px-6 py-3 text-right">Last Update</th>
+                </tr>
+              </thead>
+              <tbody
+                id="live-table-body"
+                class="divide-y divide-slate-700 font-mono"
+              >
+                <!-- Rows injected via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- LEVEL 6: HISTORY & REPORTS -->
+      <section id="reports" class="pt-8 pb-12 mt-8 border-t border-slate-200">
+        <div class="flex flex-col md:flex-row justify-between items-end mb-4">
+          <div>
+            <h2 class="text-xl font-bold text-slate-800">Histori & Laporan</h2>
+            <p class="text-sm text-slate-500">
+              Arsip data produksi 30 hari terakhir
+            </p>
+          </div>
+          <div class="flex space-x-2 mt-4 md:mt-0">
+            <input
+              type="date"
+              class="border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-brand-500"
+            />
+            <button
+              onclick="exportData('PDF')"
+              class="bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded text-sm font-medium transition"
+            >
+              <i class="fa-solid fa-file-pdf mr-2"></i>PDF
+            </button>
+            <button
+              onclick="exportData('Excel')"
+              class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-medium transition"
+            >
+              <i class="fa-solid fa-file-excel mr-2"></i>Excel
+            </button>
+          </div>
+        </div>
+
+        <div
+          class="bg-white rounded-lg shadow border border-slate-200 overflow-hidden"
+        >
+          <table class="min-w-full divide-y divide-slate-200">
+            <thead class="bg-slate-50">
+              <tr>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider"
+                >
+                  Tanggal
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider"
+                >
+                  Gedung
+                </th>
+                <th
+                  class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider"
+                >
+                  Total Target
+                </th>
+                <th
+                  class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider"
+                >
+                  Total Aktual
+                </th>
+                <th
+                  class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider"
+                >
+                  Efficiency
+                </th>
+              </tr>
+            </thead>
+            <tbody
+              class="bg-white divide-y divide-slate-200"
+              id="history-table"
+            >
+              <!-- Static history mock data -->
+              <tr>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
+                  2023-10-24
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                  Gedung A
+                </td>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm text-right text-slate-900"
+                >
+                  4,000
+                </td>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm text-right text-slate-900"
+                >
+                  3,950
+                </td>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm text-right text-green-600 font-bold"
+                >
+                  98.7%
+                </td>
+              </tr>
+              <tr>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">
+                  2023-10-24
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                  Gedung B
+                </td>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm text-right text-slate-900"
+                >
+                  3,500
+                </td>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm text-right text-slate-900"
+                >
+                  3,100
+                </td>
+                <td
+                  class="px-6 py-4 whitespace-nowrap text-sm text-right text-yellow-600 font-bold"
+                >
+                  88.5%
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <footer class="bg-white border-t border-slate-200 py-6 mt-8">
+      <div class="max-w-7xl mx-auto px-4 text-center text-sm text-slate-500">
+        &copy; 2023 SmartShoe Mfg. All rights reserved. System Ver 2.0.1
+      </div>
     </footer>
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
-        // --- 1. MOCK DATA STRUCTURE & CONFIG ---
-        const buildings = ['A', 'B', 'C'];
-        const linesPerBuilding = 4;
-        const defectTypes = ['Lem Bocor', 'Jahitan Meleset', 'Sole Miring', 'Kotor', 'Bahan Rusak'];
-        
-        // Generate Initial State
-        let factoryData = [];
+      // --- 1. MOCK DATA STRUCTURE & CONFIG ---
+      const buildings = ["A", "B", "C"];
+      const linesPerBuilding = 4;
+      const defectTypes = [
+        "Lem Bocor",
+        "Jahitan Meleset",
+        "Sole Miring",
+        "Kotor",
+        "Bahan Rusak",
+      ];
 
-        function initData() {
-            factoryData = buildings.map(b => {
-                let lines = [];
-                for(let i=1; i<=linesPerBuilding; i++) {
-                    lines.push({
-                        id: `L-${b}${i}`,
-                        name: `Line ${b}-${i}`,
-                        target: 1000,
-                        actual: Math.floor(Math.random() * 600) + 200, // Random start
-                        defect: Math.floor(Math.random() * 20),
-                        status: 'Normal', // Normal, Warning, Critical
-                        lastUpdate: new Date()
-                    });
-                }
-                return {
-                    name: `Gedung ${b}`,
-                    id: b,
-                    lines: lines
-                };
+      // Generate Initial State
+      let factoryData = [];
+
+      function initData() {
+        factoryData = buildings.map((b) => {
+          let lines = [];
+          for (let i = 1; i <= linesPerBuilding; i++) {
+            lines.push({
+              id: `L-${b}${i}`,
+              name: `Line ${b}-${i}`,
+              target: 1000,
+              actual: Math.floor(Math.random() * 600) + 200, // Random start
+              defect: {
+                d1: 0,
+                d2: 0,
+                d3: 0,
+              },
+              status: "Normal", // Normal, Warning, Critical
+              lastUpdate: new Date(),
             });
-        }
-        initData();
+          }
+          return {
+            name: `Gedung ${b}`,
+            id: b,
+            lines: lines,
+          };
+        });
+      }
+      initData();
 
-        // Chart Instances
-        let chartGlobalQualityInst = null;
-        let chartBuildingProdInst = null;
-        let chartLinePerfInst = null;
-        let chartHourlyInst = null;
-        let chartDefectTypeInst = null;
-        let chartDefectTrendInst = null;
+      // Chart Instances
+      let chartGlobalQualityInst = null;
+      let chartBuildingProdInst = null;
+      let chartLinePerfInst = null;
+      let chartHourlyInst = null;
+      let chartDefectTypeInst = null;
+      let chartDefectTrendInst = null;
 
-        // --- 2. UTILITY FUNCTIONS ---
-        
-        function formatNumber(num) {
-            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-        }
+      // --- 2. UTILITY FUNCTIONS ---
 
-        function updateTime() {
-            const now = new Date();
-            document.getElementById('current-time').innerText = now.toLocaleTimeString('id-ID');
-            document.getElementById('current-date').innerText = now.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-        }
-        setInterval(updateTime, 1000);
-        updateTime();
+      function formatNumber(num) {
+        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+      }
 
-        // --- 3. CHART RENDERING ---
+      function updateTime() {
+        const now = new Date();
+        document.getElementById("current-time").innerText =
+          now.toLocaleTimeString("id-ID");
+        document.getElementById("current-date").innerText =
+          now.toLocaleDateString("id-ID", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          });
+      }
+      setInterval(updateTime, 1000);
+      updateTime();
 
-        function renderCharts() {
-            const ctxGlobal = document.getElementById('chartGlobalQuality').getContext('2d');
-            const ctxBuild = document.getElementById('chartBuildingProd').getContext('2d');
-            const ctxLine = document.getElementById('chartLinePerformance').getContext('2d');
-            const ctxHourly = document.getElementById('chartHourlyTrend').getContext('2d');
-            const ctxDefectType = document.getElementById('chartDefectTypes').getContext('2d');
-            const ctxDefectTrend = document.getElementById('chartDefectTrend').getContext('2d');
+      // --- 3. CHART RENDERING ---
 
-            // 1. Global Pie
-            chartGlobalQualityInst = new Chart(ctxGlobal, {
-                type: 'doughnut',
-                data: {
-                    labels: ['OK', 'Defect'],
-                    datasets: [{
-                        data: [0, 0],
-                        backgroundColor: ['#10b981', '#ef4444'],
-                        borderWidth: 0
-                    }]
-                },
-                options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+      function renderCharts() {
+        const ctxGlobal = document
+          .getElementById("chartGlobalQuality")
+          .getContext("2d");
+        const ctxBuild = document
+          .getElementById("chartBuildingProd")
+          .getContext("2d");
+        const ctxLine = document
+          .getElementById("chartLinePerformance")
+          .getContext("2d");
+        const ctxHourly = document
+          .getElementById("chartHourlyTrend")
+          .getContext("2d");
+        const ctxDefectType = document
+          .getElementById("chartDefectTypes")
+          .getContext("2d");
+        const ctxDefectTrend = document
+          .getElementById("chartDefectTrend")
+          .getContext("2d");
+
+        // 1. Global Pie
+        chartGlobalQualityInst = new Chart(ctxGlobal, {
+          type: "doughnut",
+          data: {
+            labels: ["OK", "Defect"],
+            datasets: [
+              {
+                data: [0, 0],
+                backgroundColor: ["#10b981", "#ef4444"],
+                borderWidth: 0,
+              },
+            ],
+          },
+          options: {
+            maintainAspectRatio: false,
+            plugins: { legend: { position: "bottom" } },
+          },
+        });
+
+        // 2. Building Bar
+        chartBuildingProdInst = new Chart(ctxBuild, {
+          type: "bar",
+          data: {
+            labels: buildings.map((b) => `Gedung ${b}`),
+            datasets: [
+              {
+                label: "Produksi",
+                data: [0, 0, 0],
+                backgroundColor: "#0ea5e9",
+                borderRadius: 4,
+              },
+            ],
+          },
+          options: {
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true } },
+          },
+        });
+
+        // 3. Line Performance (Bar)
+        chartLinePerfInst = new Chart(ctxLine, {
+          type: "bar",
+          data: {
+            labels: [],
+            datasets: [
+              {
+                label: "Aktual",
+                data: [],
+                backgroundColor: "#0284c7",
+              },
+              {
+                label: "Target",
+                data: [],
+                backgroundColor: "#e2e8f0",
+                type: "line", // Mixed chart
+              },
+            ],
+          },
+          options: {
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true } },
+          },
+        });
+
+        // 4. Hourly Trend (Line) - Mock Data Pattern
+        chartHourlyInst = new Chart(ctxHourly, {
+          type: "line",
+          data: {
+            labels: [
+              "08:00",
+              "09:00",
+              "10:00",
+              "11:00",
+              "12:00",
+              "13:00",
+              "14:00",
+            ],
+            datasets: [
+              {
+                label: "Output/Jam",
+                data: [150, 200, 220, 180, 50, 210, 230], // Dummy trend
+                borderColor: "#8b5cf6",
+                tension: 0.4,
+                fill: true,
+                backgroundColor: "rgba(139, 92, 246, 0.1)",
+              },
+            ],
+          },
+          options: { maintainAspectRatio: false },
+        });
+
+        // 5. Defect Types (Radar/Pie)
+        chartDefectTypeInst = new Chart(ctxDefectType, {
+          type: "pie",
+          data: {
+            labels: defectTypes,
+            datasets: [
+              {
+                data: [10, 5, 8, 3, 2],
+                backgroundColor: [
+                  "#ef4444",
+                  "#f97316",
+                  "#f59e0b",
+                  "#eab308",
+                  "#84cc16",
+                ],
+              },
+            ],
+          },
+          options: {
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: "right", labels: { boxWidth: 10 } },
+            },
+          },
+        });
+
+        // 6. Defect Trend
+        chartDefectTrendInst = new Chart(ctxDefectTrend, {
+          type: "line",
+          data: {
+            labels: ["08:00", "10:00", "12:00", "14:00"],
+            datasets: [
+              {
+                label: "Defect Count",
+                data: [5, 12, 4, 8],
+                borderColor: "#ef4444",
+                backgroundColor: "rgba(239, 68, 68, 0.1)",
+                fill: true,
+              },
+            ],
+          },
+          options: { maintainAspectRatio: false },
+        });
+      }
+
+      // --- 4. DASHBOARD UPDATE LOGIC ---
+
+      function updateDashboard(filterBuilding = "all") {
+        let totalProd = 0;
+        let totalDefect = 0;
+        let totalTarget = 0;
+        let activeLines = 0;
+        let totalDefect1 = 0;
+        let totalDefect2 = 0;
+        let totalDefect3 = 0;
+
+        let buildingProdData = [0, 0, 0]; // For A, B, C
+
+        // Logic to aggregate data
+        factoryData.forEach((b, index) => {
+          let bProd = 0;
+          b.lines.forEach((l) => {
+            // Update Line Status logic
+            const percent = (l.actual / l.target) * 100;
+            if (l.defect > 20) l.status = "Critical";
+            else if (l.actual < l.target * 0.5) l.status = "Warning";
+            else l.status = "Normal";
+
+            if (filterBuilding === "all" || filterBuilding === b.id) {
+              totalProd += l.actual;
+              const lineDefect = l.defect.d1 + l.defect.d2 + l.defect.d3;
+              totalDefect += lineDefect;
+              totalDefect1 += l.defect.d1;
+              totalDefect2 += l.defect.d2;
+              totalDefect3 += l.defect.d3;
+              totalTarget += l.target;
+              activeLines++;
+            }
+            bProd += l.actual;
+          });
+          buildingProdData[index] = bProd;
+        });
+
+        const totalOk = totalProd - totalDefect;
+        const defectRate =
+          totalProd > 0 ? ((totalDefect / totalProd) * 100).toFixed(2) : 0;
+
+        // UPDATE KPI CARDS
+        document.getElementById("kpi-total").innerText =
+          formatNumber(totalProd);
+        document.getElementById("kpi-ok").innerText = formatNumber(totalOk);
+        document.getElementById("kpi-defect").innerText =
+          formatNumber(totalDefect);
+        document.getElementById("kpi-defect-1").innerText =
+          formatNumber(totalDefect1);
+        document.getElementById("kpi-defect-2").innerText =
+          formatNumber(totalDefect2);
+        document.getElementById("kpi-defect-3").innerText =
+          formatNumber(totalDefect3);
+
+        // UPDATE CHARTS
+        // 1. Global
+        chartGlobalQualityInst.data.datasets[0].data = [totalOk, totalDefect];
+        chartGlobalQualityInst.update();
+
+        // 2. Building Prod (Static structure, dynamic value)
+        chartBuildingProdInst.data.datasets[0].data = buildingProdData;
+        chartBuildingProdInst.update();
+
+        // 3. Line Perf (Dependent on Filter)
+        let lineLabels = [];
+        let lineActuals = [];
+        let lineTargets = [];
+
+        factoryData.forEach((b) => {
+          if (filterBuilding === "all" || filterBuilding === b.id) {
+            b.lines.forEach((l) => {
+              lineLabels.push(l.id);
+              lineActuals.push(l.actual);
+              lineTargets.push(l.target);
             });
+          }
+        });
 
-            // 2. Building Bar
-            chartBuildingProdInst = new Chart(ctxBuild, {
-                type: 'bar',
-                data: {
-                    labels: buildings.map(b => `Gedung ${b}`),
-                    datasets: [{
-                        label: 'Produksi',
-                        data: [0, 0, 0],
-                        backgroundColor: '#0ea5e9',
-                        borderRadius: 4
-                    }]
-                },
-                options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
-            });
+        chartLinePerfInst.data.labels = lineLabels;
+        chartLinePerfInst.data.datasets[0].data = lineActuals;
+        chartLinePerfInst.data.datasets[1].data = lineTargets;
+        chartLinePerfInst.update();
 
-            // 3. Line Performance (Bar)
-            chartLinePerfInst = new Chart(ctxLine, {
-                type: 'bar',
-                data: {
-                    labels: [],
-                    datasets: [{
-                        label: 'Aktual',
-                        data: [],
-                        backgroundColor: '#0284c7'
-                    }, {
-                        label: 'Target',
-                        data: [],
-                        backgroundColor: '#e2e8f0',
-                        type: 'line' // Mixed chart
-                    }]
-                },
-                options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
-            });
+        // Label Helper
+        document.getElementById("lbl-building-name").innerText =
+          filterBuilding === "all" ? "(Semua)" : `(Gedung ${filterBuilding})`;
 
-            // 4. Hourly Trend (Line) - Mock Data Pattern
-            chartHourlyInst = new Chart(ctxHourly, {
-                type: 'line',
-                data: {
-                    labels: ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00'],
-                    datasets: [{
-                        label: 'Output/Jam',
-                        data: [150, 200, 220, 180, 50, 210, 230], // Dummy trend
-                        borderColor: '#8b5cf6',
-                        tension: 0.4,
-                        fill: true,
-                        backgroundColor: 'rgba(139, 92, 246, 0.1)'
-                    }]
-                },
-                options: { maintainAspectRatio: false }
-            });
+        // RENDER LINE CARDS GRID
+        renderLineCards(filterBuilding);
 
-             // 5. Defect Types (Radar/Pie)
-             chartDefectTypeInst = new Chart(ctxDefectType, {
-                type: 'pie',
-                data: {
-                    labels: defectTypes,
-                    datasets: [{
-                        data: [10, 5, 8, 3, 2],
-                        backgroundColor: ['#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16']
-                    }]
-                },
-                options: { maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 10 } } } }
-            });
+        // RENDER LIVE TABLE
+        renderLiveTable(filterBuilding);
+      }
 
-            // 6. Defect Trend
-            chartDefectTrendInst = new Chart(ctxDefectTrend, {
-                type: 'line',
-                data: {
-                    labels: ['08:00', '10:00', '12:00', '14:00'],
-                    datasets: [{
-                        label: 'Defect Count',
-                        data: [5, 12, 4, 8],
-                        borderColor: '#ef4444',
-                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                        fill: true
-                    }]
-                },
-                options: { maintainAspectRatio: false }
-            });
-        }
+      function renderLineCards(filter) {
+        const container = document.getElementById("lines-grid");
+        container.innerHTML = "";
 
-        // --- 4. DASHBOARD UPDATE LOGIC ---
+        factoryData.forEach((b) => {
+          if (filter === "all" || filter === b.id) {
+            b.lines.forEach((l) => {
+              const percent = Math.min(
+                (l.actual / l.target) * 100,
+                100,
+              ).toFixed(1);
 
-        function updateDashboard(filterBuilding = 'all') {
-            let totalProd = 0;
-            let totalDefect = 0;
-            let totalTarget = 0;
-            let activeLines = 0;
-            
-            let buildingProdData = [0, 0, 0]; // For A, B, C
-            
-            // Logic to aggregate data
-            factoryData.forEach((b, index) => {
-                let bProd = 0;
-                b.lines.forEach(l => {
-                    // Update Line Status logic
-                    const percent = (l.actual / l.target) * 100;
-                    if(l.defect > 20) l.status = 'Critical';
-                    else if (l.actual < l.target * 0.5) l.status = 'Warning';
-                    else l.status = 'Normal';
+              // Status styling
+              let statusColor = "bg-green-100 text-green-800 border-green-200";
+              let barColor = "bg-brand-500";
+              if (l.status === "Warning") {
+                statusColor = "bg-yellow-100 text-yellow-800 border-yellow-200";
+                barColor = "bg-yellow-500";
+              }
+              if (l.status === "Critical") {
+                statusColor = "bg-red-100 text-red-800 border-red-200";
+                barColor = "bg-red-500";
+              }
 
-                    if (filterBuilding === 'all' || filterBuilding === b.id) {
-                        totalProd += l.actual;
-                        totalDefect += l.defect;
-                        totalTarget += l.target;
-                        activeLines++;
-                    }
-                    bProd += l.actual;
-                });
-                buildingProdData[index] = bProd;
-            });
-
-            const totalOk = totalProd - totalDefect;
-            const defectRate = totalProd > 0 ? ((totalDefect / totalProd) * 100).toFixed(2) : 0;
-
-            // UPDATE KPI CARDS
-            document.getElementById('kpi-total').innerText = formatNumber(totalProd);
-            document.getElementById('kpi-ok').innerText = formatNumber(totalOk);
-            document.getElementById('kpi-defect').innerText = formatNumber(totalDefect);
-            document.getElementById('kpi-rate').innerText = defectRate + '%';
-            document.getElementById('kpi-rate-bar').style.width = Math.min(defectRate * 5, 100) + '%'; // Scale for visual
-            document.getElementById('kpi-lines').innerText = `${activeLines}/${linesPerBuilding * buildings.length}`;
-
-            // UPDATE CHARTS
-            // 1. Global
-            chartGlobalQualityInst.data.datasets[0].data = [totalOk, totalDefect];
-            chartGlobalQualityInst.update();
-
-            // 2. Building Prod (Static structure, dynamic value)
-            chartBuildingProdInst.data.datasets[0].data = buildingProdData;
-            chartBuildingProdInst.update();
-
-            // 3. Line Perf (Dependent on Filter)
-            let lineLabels = [];
-            let lineActuals = [];
-            let lineTargets = [];
-
-            factoryData.forEach(b => {
-                if (filterBuilding === 'all' || filterBuilding === b.id) {
-                    b.lines.forEach(l => {
-                        lineLabels.push(l.id);
-                        lineActuals.push(l.actual);
-                        lineTargets.push(l.target);
-                    });
-                }
-            });
-
-            chartLinePerfInst.data.labels = lineLabels;
-            chartLinePerfInst.data.datasets[0].data = lineActuals;
-            chartLinePerfInst.data.datasets[1].data = lineTargets;
-            chartLinePerfInst.update();
-
-            // Label Helper
-            document.getElementById('lbl-building-name').innerText = filterBuilding === 'all' ? '(Semua)' : `(Gedung ${filterBuilding})`;
-
-            // RENDER LINE CARDS GRID
-            renderLineCards(filterBuilding);
-            
-            // RENDER LIVE TABLE
-            renderLiveTable(filterBuilding);
-        }
-
-        function renderLineCards(filter) {
-            const container = document.getElementById('lines-grid');
-            container.innerHTML = '';
-
-            factoryData.forEach(b => {
-                if (filter === 'all' || filter === b.id) {
-                    b.lines.forEach(l => {
-                        const percent = Math.min((l.actual / l.target) * 100, 100).toFixed(1);
-                        
-                        // Status styling
-                        let statusColor = 'bg-green-100 text-green-800 border-green-200';
-                        let barColor = 'bg-brand-500';
-                        if (l.status === 'Warning') {
-                            statusColor = 'bg-yellow-100 text-yellow-800 border-yellow-200';
-                            barColor = 'bg-yellow-500';
-                        }
-                        if (l.status === 'Critical') {
-                            statusColor = 'bg-red-100 text-red-800 border-red-200';
-                            barColor = 'bg-red-500';
-                        }
-
-                        const card = `
+              const card = `
                         <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4 card-hover relative overflow-hidden">
                             <div class="flex justify-between items-center mb-2">
                                 <h4 class="font-bold text-slate-700">${l.name}</h4>
@@ -609,7 +906,7 @@
                             </div>
                             <div class="flex justify-between text-sm text-slate-500 mb-1">
                                 <span>Target: ${formatNumber(l.target)}</span>
-                                <span>Defect: <span class="text-red-500 font-bold">${l.defect}</span></span>
+                                <span>Defect: <span class="text-red-500 font-bold"> ${l.defect.d1 + l.defect.d2 + l.defect.d3}</span> </span>
                             </div>
                             <div class="flex items-end justify-between mb-2">
                                 <span class="text-2xl font-bold text-slate-800">${formatNumber(l.actual)}</span>
@@ -620,32 +917,35 @@
                             </div>
                         </div>
                         `;
-                        container.innerHTML += card;
-                    });
-                }
+              container.innerHTML += card;
             });
-        }
+          }
+        });
+      }
 
-        function renderLiveTable(filter) {
-            const tbody = document.getElementById('live-table-body');
-            tbody.innerHTML = '';
-            
-            // Flatten list for table
-            let allLines = [];
-            factoryData.forEach(b => {
-                if (filter === 'all' || filter === b.id) {
-                    b.lines.forEach(l => {
-                        allLines.push({...l, building: b.id});
-                    });
-                }
+      function renderLiveTable(filter) {
+        const tbody = document.getElementById("live-table-body");
+        tbody.innerHTML = "";
+
+        // Flatten list for table
+        let allLines = [];
+        factoryData.forEach((b) => {
+          if (filter === "all" || filter === b.id) {
+            b.lines.forEach((l) => {
+              allLines.push({ ...l, building: b.id });
             });
+          }
+        });
 
-            // Sort by last update (simulated by taking first 5-8 items randomly or just top list)
-            // Just showing top 5 for "Live Feed" visual
-            allLines.slice(0, 8).forEach(l => {
-                let statusBadge = l.status === 'Normal' ? '<span class="text-green-400">● OK</span>' : '<span class="text-red-400">● Check</span>';
-                
-                const row = `
+        // Sort by last update (simulated by taking first 5-8 items randomly or just top list)
+        // Just showing top 5 for "Live Feed" visual
+        allLines.slice(0, 8).forEach((l) => {
+          let statusBadge =
+            l.status === "Normal"
+              ? '<span class="text-green-400">● OK</span>'
+              : '<span class="text-red-400">● Check</span>';
+
+          const row = `
                 <tr class="hover:bg-slate-800 transition">
                     <td class="px-6 py-3 font-medium text-white">Gedung ${l.building}</td>
                     <td class="px-6 py-3 text-slate-400">${l.name}</td>
@@ -655,53 +955,59 @@
                     <td class="px-6 py-3 text-right text-slate-500 text-xs">${l.lastUpdate.toLocaleTimeString()}</td>
                 </tr>
                 `;
-                tbody.innerHTML += row;
-            });
+          tbody.innerHTML += row;
+        });
+      }
+
+      // --- 5. SIMULATION LOGIC ---
+
+      function simulateRealTime() {
+        // Randomly pick a building and line to increment production
+        const bIdx = Math.floor(Math.random() * buildings.length);
+        const lIdx = Math.floor(Math.random() * linesPerBuilding);
+
+        const line = factoryData[bIdx].lines[lIdx];
+
+        // Increment logic
+        line.actual += Math.floor(Math.random() * 5); // Add 0-5 shoes
+
+        // Random defect chance (small)
+        if (Math.random() > 0.9) {
+          const r = Math.random();
+          if (r < 0.4) line.defect.d1++;
+          else if (r < 0.75) line.defect.d2++;
+          else line.defect.d3++;
         }
 
-        // --- 5. SIMULATION LOGIC ---
+        line.lastUpdate = new Date();
 
-        function simulateRealTime() {
-            // Randomly pick a building and line to increment production
-            const bIdx = Math.floor(Math.random() * buildings.length);
-            const lIdx = Math.floor(Math.random() * linesPerBuilding);
-            
-            const line = factoryData[bIdx].lines[lIdx];
-            
-            // Increment logic
-            line.actual += Math.floor(Math.random() * 5); // Add 0-5 shoes
-            
-            // Random defect chance (small)
-            if(Math.random() > 0.9) {
-                line.defect += 1;
-            }
-            
-            line.lastUpdate = new Date();
+        // Refresh UI
+        const currentFilter = document.getElementById("buildingSelect").value;
+        updateDashboard(currentFilter);
+      }
 
-            // Refresh UI
-            const currentFilter = document.getElementById('buildingSelect').value;
-            updateDashboard(currentFilter);
-        }
+      function exportData(type) {
+        alert(
+          `Mengekspor Laporan Produksi ke format ${type}...\n(Fitur ini simulasi)`,
+        );
+      }
 
-        function exportData(type) {
-            alert(`Mengekspor Laporan Produksi ke format ${type}...\n(Fitur ini simulasi)`);
-        }
+      // --- 6. INITIALIZATION ---
 
-        // --- 6. INITIALIZATION ---
+      window.onload = function () {
+        renderCharts();
+        updateDashboard();
 
-        window.onload = function() {
-            renderCharts();
-            updateDashboard();
+        // Select Listener
+        document
+          .getElementById("buildingSelect")
+          .addEventListener("change", (e) => {
+            updateDashboard(e.target.value);
+          });
 
-            // Select Listener
-            document.getElementById('buildingSelect').addEventListener('change', (e) => {
-                updateDashboard(e.target.value);
-            });
-
-            // Start Simulation (Every 2 seconds)
-            setInterval(simulateRealTime, 2000);
-        };
-
+        // Start Simulation (Every 2 seconds)
+        setInterval(simulateRealTime, 2000);
+      };
     </script>
-</body>
+  </body>
 </html>
