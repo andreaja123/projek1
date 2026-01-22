@@ -186,7 +186,10 @@
                 <i class="fa-solid fa-check-circle"></i>
               </div>
             </div>
-            <p class="text-xs text-slate-400 mt-2">Target: 98%</p>
+            <p class="text-xs text-slate-500 mt-1">
+  Rate: <span id="rate-ok" class="font-semibold">0%</span>
+</p>
+
           </div>
 
           <!-- Total Defect -->
@@ -211,7 +214,10 @@
                 <i class="fa-solid fa-triangle-exclamation"></i>
               </div>
             </div>
-            <p class="text-xs text-slate-400 mt-2">Max limit: 2%</p>
+            <p class="text-xs text-slate-500 mt-1">
+  Defect Rate: <span id="rate-defect" class="font-semibold">0%</span>
+</p>
+
           </div>
 
           <!-- Defect 1 -->
@@ -224,7 +230,10 @@
             <h3 class="text-2xl font-bold text-red-600 mt-1" id="kpi-defect-1">
               0
             </h3>
-            <p class="text-xs text-slate-400 mt-2">Bagian dari NG</p>
+            <p class="text-xs text-slate-500 mt-1">
+  Rate NG: <span id="rate-defect-1" class="font-semibold">0%</span>
+</p>
+
           </div>
 
           <!-- Defect 2 -->
@@ -240,7 +249,10 @@
             >
               0
             </h3>
-            <p class="text-xs text-slate-400 mt-2">Bagian dari NG</p>
+            <p class="text-xs text-slate-500 mt-1">
+  Rate NG: <span id="rate-defect-2" class="font-semibold">0%</span>
+</p>
+
           </div>
 
           <!-- Defect 3 -->
@@ -256,7 +268,10 @@
             >
               0
             </h3>
-            <p class="text-xs text-slate-400 mt-2">Bagian dari NG</p>
+            <p class="text-xs text-slate-500 mt-1">
+  Rate NG: <span id="rate-defect-3" class="font-semibold">0%</span>
+</p>
+
           </div>
         </div>
 
@@ -819,7 +834,17 @@
 
         const totalOk = totalProd - totalDefect;
         const defectRate =
-          totalProd > 0 ? ((totalDefect / totalProd) * 100).toFixed(2) : 0;
+  totalProd > 0 ? (totalDefect / totalProd) * 100 : 0;
+
+const goodRate = 100 - defectRate;
+
+const defect1Rate =
+  totalDefect > 0 ? (totalDefect1 / totalDefect) * 100 : 0;
+const defect2Rate =
+  totalDefect > 0 ? (totalDefect2 / totalDefect) * 100 : 0;
+const defect3Rate =
+  totalDefect > 0 ? (totalDefect3 / totalDefect) * 100 : 0;
+
 
         // UPDATE KPI CARDS
         document.getElementById("kpi-total").innerText =
@@ -833,6 +858,21 @@
           formatNumber(totalDefect2);
         document.getElementById("kpi-defect-3").innerText =
           formatNumber(totalDefect3);
+        document.getElementById("rate-defect").innerText =
+  defectRate.toFixed(2) + "%";
+
+document.getElementById("rate-ok").innerText =
+  goodRate.toFixed(2) + "%";
+
+document.getElementById("rate-defect-1").innerText =
+  defect1Rate.toFixed(1) + "%";
+
+document.getElementById("rate-defect-2").innerText =
+  defect2Rate.toFixed(1) + "%";
+
+document.getElementById("rate-defect-3").innerText =
+  defect3Rate.toFixed(1) + "%";
+
 
         // UPDATE CHARTS
         // 1. Global
@@ -1011,4 +1051,5 @@
     </script>
   </body>
 </html>
+
 
